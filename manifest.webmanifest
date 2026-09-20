@@ -1,6 +1,6 @@
 {
   "name": "أذكار طرفي النهار",
-  "short_name": "الأذكار",
+  "short_name": "أذكار",
   "description": "نسخة رقمية تفاعلية لأذكار طرفي النهار — صدقة جارية عن والدي رحمه الله.",
   "id": "./",
   "start_url": "./",
@@ -12,21 +12,21 @@
   "dir": "rtl",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "icon-192.webp",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/webp",
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "icon-512.webp",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/webp",
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "icon-512.webp",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/webp",
       "purpose": "maskable"
     }
   ]
