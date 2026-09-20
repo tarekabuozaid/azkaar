@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<!-- azkaar-version:12 -->
+<!-- azkaar-version:13 -->
 <!-- azkaar-version:6 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -10,7 +10,7 @@
 <meta name="description" content="نسخة رقمية تفاعلية لأذكار طرفي النهار — صدقة جارية عن والدي رحمه الله.">
 <link rel="canonical" href="https://tarekabuozaid.github.io/azkaar/">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/webp" href="icon-192.webp">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <meta property="og:locale" content="ar_AR">
 <meta property="og:type" content="website">
@@ -821,7 +821,7 @@ window.addEventListener('pageshow',updateInstallUI);
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      await navigator.serviceWorker.register('./sw.js?v=12');
+      await navigator.serviceWorker.register('./sw.js?v=13');
       await navigator.serviceWorker.ready;
       const st=$('offlineStatus');
       if(st){st.textContent='متاح دون إنترنت ✓';st.classList.add('ready')}
