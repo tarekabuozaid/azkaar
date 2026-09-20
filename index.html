@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
+<!-- azkaar-version:8 -->
 <!-- azkaar-version:6 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -113,6 +114,21 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
 .offline-note{font-size:.85rem;color:var(--muted);margin-top:8px}
 @media(min-width:560px){.sharebar{grid-template-columns:repeat(5,minmax(0,1fr))}}
 
+
+.tapHint{
+  margin-top:10px;color:var(--muted);font-size:.86rem;text-align:center;
+}
+#singleView{cursor:pointer}
+.completion{
+  margin-top:14px;padding:26px 20px;text-align:center;
+  background:var(--card);border:1px solid var(--border);border-radius:22px
+}
+.completion[hidden]{display:none}
+.completion .doneIcon{font-size:2.3rem;margin-bottom:8px}
+.completion h2{margin:0 0 8px;color:var(--accent)}
+.completion p{margin:0;color:var(--muted);line-height:1.8}
+.completionActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+
 </style>
 </head>
 <body>
@@ -153,6 +169,7 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
       <div class="badge" id="numBadge">1</div>
       <div class="text" id="dhikrText"></div>
       <div class="rep" id="repText"></div>
+      <div class="tapHint" id="tapHint">يمكنك الضغط على بطاقة الذكر لاحتساب مرة</div>
       <div class="selectRow" id="targetRow" hidden>
         <label for="targetSelect">عدد التكرار:</label>
         <select id="targetSelect"></select>
@@ -169,6 +186,16 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
     </section>
 
     <section class="all" id="allView"></section>
+
+    <section class="completion" id="completionView" hidden aria-live="polite">
+      <div class="doneIcon">🤲</div>
+      <h2 id="completionTitle">تقبل الله منك</h2>
+      <p id="completionText">أتممت الأذكار.</p>
+      <div class="completionActions">
+        <button type="button" class="btn" id="shareDoneBtn">📤 مشاركة الأذكار</button>
+        <button type="button" class="btn" id="restartDoneBtn">بدء من جديد</button>
+      </div>
+    </section>
 
 
     <section class="source-note">
@@ -239,119 +266,358 @@ const data=[
 {m:'اللهم صل على محمد وعلى آل محمد كما صليت على إبراهيم وعلى آل إبراهيم، إنك حميد مجيد.',e:'اللهم صل على محمد وعلى آل محمد كما صليت على إبراهيم وعلى آل إبراهيم، إنك حميد مجيد.',targets:[10],label:'عشر مرات'}
 ];
 
-const STORAGE_KEY='azkaar-progress-v2';
+const STORAGE_KEY='azkaar-progress-v3';
+const OLD_STORAGE_KEY='azkaar-progress-v2';
 const SITE_URL='https://tarekabuozaid.github.io/azkaar/';
 const SHARE_TEXT='أذكار طرفي النهار — صدقة جارية';
-let mode='morning',index=0,font=1.32,showAll=false;
-const counts=data.map(()=>0);
-const targets=data.map(x=>x.targets[0]);
 const $=id=>document.getElementById(id);
+const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
+const defaultTargets=()=>data.map(x=>x.targets[0]);
+const newSession=()=>({index:0,counts:data.map(()=>0),targets:defaultTargets()});
 
-function clamp(n,min,max){return Math.min(max,Math.max(min,n))}
-function notify(msg){
-  const el=$('toast'); el.textContent=msg; el.classList.add('show');
-  clearTimeout(notify.t); notify.t=setTimeout(()=>el.classList.remove('show'),2200);
+function localDayKey(){
+  const d=new Date();
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
 }
-function saveState(){
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({
-    mode,index,font,showAll,counts:[...counts],targets:[...targets],dark:document.body.classList.contains('dark')
-  }));}catch(e){}
+function automaticMode(){
+  const h=new Date().getHours();
+  return (h>=4 && h<17)?'morning':'evening';
 }
+
+let state={
+  date:localDayKey(),
+  mode:automaticMode(),
+  modeManual:false,
+  font:1.32,
+  showAll:false,
+  dark:false,
+  sessions:{morning:newSession(),evening:newSession()}
+};
+
+function sanitizeSession(src){
+  const s=newSession();
+  if(!src || typeof src!=='object')return s;
+  s.index=clamp(Number(src.index)||0,0,data.length-1);
+  if(Array.isArray(src.counts)){
+    src.counts.slice(0,data.length).forEach((v,i)=>s.counts[i]=Math.max(0,Number(v)||0));
+  }
+  if(Array.isArray(src.targets)){
+    src.targets.slice(0,data.length).forEach((v,i)=>{
+      const n=Number(v);
+      if(data[i].targets.includes(n))s.targets[i]=n;
+    });
+  }
+  s.counts=s.counts.map((v,i)=>Math.min(v,s.targets[i]));
+  return s;
+}
+
+function migrateOldState(){
+  try{
+    const old=JSON.parse(localStorage.getItem(OLD_STORAGE_KEY)||'null');
+    if(!old)return false;
+    state.font=clamp(Number(old.font)||1.32,1,1.8);
+    state.showAll=!!old.showAll;
+    state.dark=!!old.dark;
+    const oldMode=(old.mode==='evening')?'evening':'morning';
+    state.mode=oldMode;
+    state.modeManual=true;
+    state.sessions[oldMode]=sanitizeSession({
+      index:old.index,
+      counts:old.counts,
+      targets:old.targets
+    });
+    return true;
+  }catch(e){return false}
+}
+
 function loadState(){
   try{
-    const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
-    if(!s)return;
-    if(s.mode==='morning'||s.mode==='evening')mode=s.mode;
-    index=clamp(Number(s.index)||0,0,data.length-1);
-    font=clamp(Number(s.font)||1.32,1,1.8);
-    showAll=!!s.showAll;
-    if(Array.isArray(s.counts))s.counts.slice(0,counts.length).forEach((v,i)=>counts[i]=Math.max(0,Number(v)||0));
-    if(Array.isArray(s.targets))s.targets.slice(0,targets.length).forEach((v,i)=>{const n=Number(v);if(data[i].targets.includes(n))targets[i]=n;});
-    if(s.dark)document.body.classList.add('dark');
+    const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(saved){
+      state.font=clamp(Number(saved.font)||1.32,1,1.8);
+      state.showAll=!!saved.showAll;
+      state.dark=!!saved.dark;
+
+      if(saved.date===localDayKey()){
+        state.date=saved.date;
+        state.mode=(saved.mode==='evening')?'evening':'morning';
+        state.modeManual=!!saved.modeManual;
+        state.sessions.morning=sanitizeSession(saved.sessions?.morning);
+        state.sessions.evening=sanitizeSession(saved.sessions?.evening);
+      }else{
+        // A new calendar day starts with fresh morning/evening progress.
+        state.date=localDayKey();
+        state.mode=automaticMode();
+        state.modeManual=false;
+        state.showAll=false;
+        state.sessions={morning:newSession(),evening:newSession()};
+      }
+    }else{
+      migrateOldState();
+    }
+  }catch(e){}
+  if(state.dark)document.body.classList.add('dark');
+  normalizeResumeIndex(state.sessions.morning);
+  normalizeResumeIndex(state.sessions.evening);
+}
+
+function session(){return state.sessions[state.mode]}
+function completeCount(s=session()){
+  return data.reduce((n,_,i)=>n+(s.counts[i]>=s.targets[i]?1:0),0);
+}
+function allComplete(s=session()){return completeCount(s)===data.length}
+
+function normalizeResumeIndex(s){
+  if(!s)return;
+  s.index=clamp(Number(s.index)||0,0,data.length-1);
+  if(s.counts[s.index] < s.targets[s.index])return;
+  const first=s.counts.findIndex((v,i)=>v<s.targets[i]);
+  if(first>=0)s.index=first;
+  else s.index=data.length-1;
+}
+
+function nextUnfinishedAfter(s,current){
+  for(let i=current+1;i<data.length;i++){
+    if(s.counts[i]<s.targets[i])return i;
+  }
+  for(let i=0;i<current;i++){
+    if(s.counts[i]<s.targets[i])return i;
+  }
+  return current;
+}
+
+function notify(msg){
+  const el=$('toast');
+  el.textContent=msg;
+  el.classList.add('show');
+  clearTimeout(notify.t);
+  notify.t=setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
   }catch(e){}
 }
-function completeCount(){return data.reduce((n,_,i)=>n+(counts[i]>=targets[i]?1:0),0)}
+
 function render(){
-  const item=data[index],target=targets[index];
+  const s=session();
+  const index=s.index;
+  const item=data[index];
+  const target=s.targets[index];
+
   $('numBadge').textContent=index+1;
-  $('dhikrText').textContent=mode==='morning'?item.m:item.e;
-  $('dhikrText').style.fontSize=font+'rem';
+  $('dhikrText').textContent=state.mode==='morning'?item.m:item.e;
+  $('dhikrText').style.fontSize=state.font+'rem';
   $('repText').textContent='التكرار: '+item.label;
-  $('countText').textContent=counts[index]+' / '+target;
+  $('countText').textContent=s.counts[index]+' / '+target;
   $('stepText').textContent='الذكر '+(index+1)+' من '+data.length;
-  const done=completeCount();
+
+  const done=completeCount(s);
   $('doneText').textContent='تم إكمال '+done+' من '+data.length;
   $('progress').style.width=((done/data.length)*100)+'%';
-  $('singleView').classList.toggle('done',counts[index]>=target);
+  $('singleView').classList.toggle('done',s.counts[index]>=target);
   $('prevBtn').disabled=index===0;
   $('nextBtn').disabled=index===data.length-1;
+
   const row=$('targetRow'),sel=$('targetSelect');
   if(item.targets.length>1){
-    row.hidden=false;sel.innerHTML='';
-    item.targets.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v+' مرة';o.selected=v===target;sel.appendChild(o)});
-  }else row.hidden=true;
-  root.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));
+    row.hidden=false;
+    sel.innerHTML='';
+    item.targets.forEach(v=>{
+      const o=document.createElement('option');
+      o.value=v;
+      o.textContent=v+' مرة';
+      o.selected=v===target;
+      sel.appendChild(o);
+    });
+  }else{
+    row.hidden=true;
+  }
+
+  root.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x.dataset.mode===state.mode));
   $('themeBtn').textContent=document.body.classList.contains('dark')?'الوضع العادي':'الوضع الليلي';
-  $('allView').classList.toggle('show',showAll);
-  $('singleView').style.display=showAll?'none':'';
-  $('allBtn').textContent=showAll?'الوضع التفاعلي':'عرض كل الأذكار';
-  renderAll();saveState();
+
+  const finished=allComplete(s);
+  const showCompletion=finished && !state.showAll;
+  $('completionView').hidden=!showCompletion;
+  $('singleView').style.display=(state.showAll||showCompletion)?'none':'';
+  $('allView').classList.toggle('show',state.showAll);
+  $('allBtn').textContent=state.showAll?'الوضع التفاعلي':'عرض كل الأذكار';
+
+  if(showCompletion){
+    const label=state.mode==='morning'?'أذكار الصباح':'أذكار المساء';
+    $('completionTitle').textContent='تقبل الله منك 🤲';
+    $('completionText').textContent='أتممت '+label+' بنسبة 100٪.';
+  }
+
+  renderAll();
+  saveState();
 }
+
 function renderAll(){
-  if(!showAll)return;
-  const box=$('allView');box.innerHTML='';
+  if(!state.showAll)return;
+  const s=session();
+  const box=$('allView');
+  box.innerHTML='';
   data.forEach((item,i)=>{
-    const el=document.createElement('article');el.className='allItem';
-    const top=document.createElement('div');top.className='small';top.textContent='الذكر '+(i+1)+' • '+item.label;
-    const txt=document.createElement('div');txt.style.lineHeight='1.9';txt.style.fontWeight='700';txt.textContent=mode==='morning'?item.m:item.e;
-    el.append(top,txt);box.appendChild(el);
+    const el=document.createElement('article');
+    el.className='allItem';
+    const top=document.createElement('div');
+    top.className='small';
+    top.textContent='الذكر '+(i+1)+' • '+item.label+(s.counts[i]>=s.targets[i]?' • تم':'');
+    const txt=document.createElement('div');
+    txt.style.lineHeight='1.9';
+    txt.style.fontWeight='700';
+    txt.textContent=state.mode==='morning'?item.m:item.e;
+    el.append(top,txt);
+    box.appendChild(el);
   });
 }
+
 function add(n){
-  counts[index]=Math.max(0,Math.min(targets[index],counts[index]+n));
-  const doneNow=counts[index]>=targets[index];render();
-  if(doneNow&&index<data.length-1)setTimeout(()=>{index++;render()},350);
+  const s=session();
+  const index=s.index;
+  s.counts[index]=clamp(s.counts[index]+n,0,s.targets[index]);
+  const itemDone=s.counts[index]>=s.targets[index];
+  render();
+
+  if(itemDone && !allComplete(s)){
+    setTimeout(()=>{
+      s.index=nextUnfinishedAfter(s,index);
+      render();
+    },350);
+  }
+}
+
+function restartCurrent(){
+  const label=state.mode==='morning'?'الصباح':'المساء';
+  state.sessions[state.mode]=newSession();
+  state.showAll=false;
+  render();
+  notify('تمت إعادة أذكار '+label+' إلى البداية');
+}
+
+async function sharePage(){
+  try{
+    if(navigator.share){
+      await navigator.share({title:'أذكار طرفي النهار',text:SHARE_TEXT,url:SITE_URL});
+      return;
+    }
+    if(navigator.clipboard){
+      await navigator.clipboard.writeText(SITE_URL);
+      notify('تم نسخ الرابط');
+      return;
+    }
+    window.prompt('انسخ رابط الصفحة:',SITE_URL);
+  }catch(e){}
+}
+
+function checkClock(){
+  const today=localDayKey();
+  if(state.date!==today){
+    state.date=today;
+    state.sessions={morning:newSession(),evening:newSession()};
+    state.mode=automaticMode();
+    state.modeManual=false;
+    state.showAll=false;
+    render();
+    notify('بدأ يوم جديد وتمت إعادة أذكار اليوم');
+    return;
+  }
+  if(!state.modeManual){
+    const m=automaticMode();
+    if(m!==state.mode){
+      state.mode=m;
+      state.showAll=false;
+      normalizeResumeIndex(session());
+      render();
+    }
+  }
 }
 
 loadState();
-root.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;render()}));
-$('plusBtn').addEventListener('click',()=>add(1));
-$('minusBtn').addEventListener('click',()=>add(-1));
-$('prevBtn').addEventListener('click',()=>{if(index>0){index--;render()}});
-$('nextBtn').addEventListener('click',()=>{if(index<data.length-1){index++;render()}});
-$('targetSelect').addEventListener('change',e=>{targets[index]=Number(e.target.value)||1;counts[index]=Math.min(counts[index],targets[index]);render()});
-$('fontPlus').addEventListener('click',()=>{font=Math.min(1.8,font+.1);render()});
-$('fontMinus').addEventListener('click',()=>{font=Math.max(1,font-.1);render()});
-$('themeBtn').addEventListener('click',()=>{document.body.classList.toggle('dark');render()});
-$('allBtn').addEventListener('click',()=>{showAll=!showAll;render()});
+
+root.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{
+  state.mode=b.dataset.mode;
+  state.modeManual=true;
+  state.showAll=false;
+  normalizeResumeIndex(session());
+  render();
+}));
+
+$('plusBtn').addEventListener('click',e=>{e.stopPropagation();add(1)});
+$('minusBtn').addEventListener('click',e=>{e.stopPropagation();add(-1)});
+$('prevBtn').addEventListener('click',e=>{
+  e.stopPropagation();
+  const s=session();
+  if(s.index>0){s.index--;render()}
+});
+$('nextBtn').addEventListener('click',e=>{
+  e.stopPropagation();
+  const s=session();
+  if(s.index<data.length-1){s.index++;render()}
+});
+$('targetSelect').addEventListener('change',e=>{
+  e.stopPropagation();
+  const s=session();
+  s.targets[s.index]=Number(e.target.value)||1;
+  s.counts[s.index]=Math.min(s.counts[s.index],s.targets[s.index]);
+  render();
+});
+$('fontPlus').addEventListener('click',()=>{state.font=Math.min(1.8,state.font+.1);render()});
+$('fontMinus').addEventListener('click',()=>{state.font=Math.max(1,state.font-.1);render()});
+$('themeBtn').addEventListener('click',()=>{document.body.classList.toggle('dark');state.dark=document.body.classList.contains('dark');render()});
+$('allBtn').addEventListener('click',()=>{state.showAll=!state.showAll;render()});
 $('resetBtn').addEventListener('click',()=>{
-  if(!confirm('إعادة جميع العدادات والتقدم إلى البداية؟'))return;
-  for(let i=0;i<counts.length;i++)counts[i]=0;
-  data.forEach((x,i)=>targets[i]=x.targets[0]);index=0;showAll=false;render();notify('تمت إعادة البداية');
+  const label=state.mode==='morning'?'الصباح':'المساء';
+  if(!confirm('إعادة أذكار '+label+' فقط إلى البداية؟'))return;
+  restartCurrent();
+});
+
+// Tapping the non-control area of the dhikr card counts one repetition.
+$('singleView').addEventListener('click',e=>{
+  if(e.target.closest('button,select,a,label'))return;
+  add(1);
 });
 
 $('waShare').href='https://wa.me/?text='+encodeURIComponent(SHARE_TEXT+'\n'+SITE_URL);
 $('tgShare').href='https://t.me/share/url?url='+encodeURIComponent(SITE_URL)+'&text='+encodeURIComponent(SHARE_TEXT);
 $('fbShare').href='https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(SITE_URL);
-$('shareBtn').addEventListener('click',async()=>{
-  try{
-    if(navigator.share){await navigator.share({title:'أذكار طرفي النهار',text:SHARE_TEXT,url:SITE_URL});return;}
-    if(navigator.clipboard){await navigator.clipboard.writeText(SITE_URL);notify('تم نسخ الرابط');return;}
-    window.prompt('انسخ رابط الصفحة:',SITE_URL);
-  }catch(e){}
-});
+$('shareBtn').addEventListener('click',sharePage);
+$('shareDoneBtn').addEventListener('click',sharePage);
+$('restartDoneBtn').addEventListener('click',restartCurrent);
 
 let deferredPrompt=null;
 const installBtn=$('installBtn');
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.hidden=false;});
-installBtn.addEventListener('click',async()=>{
-  if(!deferredPrompt){notify('استخدم «إضافة إلى الشاشة الرئيسية» من قائمة المتصفح');return;}
-  deferredPrompt.prompt();try{await deferredPrompt.userChoice;}catch(e){}
-  deferredPrompt=null;installBtn.hidden=true;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredPrompt=e;
+  installBtn.hidden=false;
 });
-window.addEventListener('appinstalled',()=>{installBtn.hidden=true;notify('تم تثبيت الصفحة كتطبيق')});
+installBtn.addEventListener('click',async()=>{
+  if(!deferredPrompt){
+    notify('استخدم «إضافة إلى الشاشة الرئيسية» من قائمة المتصفح');
+    return;
+  }
+  deferredPrompt.prompt();
+  try{await deferredPrompt.userChoice}catch(e){}
+  deferredPrompt=null;
+  installBtn.hidden=true;
+});
+window.addEventListener('appinstalled',()=>{
+  installBtn.hidden=true;
+  notify('تم تثبيت الصفحة كتطبيق');
+});
 
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=6').catch(()=>{}));
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=8').catch(()=>{}));
+}
+
+setInterval(checkClock,60000);
 render();
 })();
 </script>
