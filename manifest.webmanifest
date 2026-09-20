@@ -1,0 +1,20 @@
+{
+  "name": "أذكار طرفي النهار",
+  "short_name": "الأذكار",
+  "description": "نسخة رقمية تفاعلية لأذكار طرفي النهار — صدقة جارية عن والدي رحمه الله.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f2e8",
+  "theme_color": "#a71922",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
