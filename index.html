@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<!-- azkaar-version:10 -->
+<!-- azkaar-version:11 -->
 <!-- azkaar-version:6 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -163,6 +163,26 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
   .siteVersion{display:block}
 }
 
+
+.installCard{
+  position:relative;margin-top:14px;padding:16px;
+  background:var(--card);border:1px solid var(--border);border-radius:20px;
+  display:grid;grid-template-columns:auto 1fr;gap:10px 12px;align-items:center
+}
+.installCard[hidden]{display:none}
+.installIcon{font-size:2rem;line-height:1}
+.installCopy{display:grid;gap:4px;padding-left:26px}
+.installCopy strong{color:var(--accent);font-size:1rem}
+.installCopy span,.iosSteps{color:var(--muted);font-size:.88rem;line-height:1.7}
+.installAction{grid-column:1/-1}
+.installClose{
+  position:absolute;top:7px;left:8px;width:32px;height:32px;min-height:32px;
+  border:0;background:transparent;color:var(--muted);font-size:1.45rem;cursor:pointer
+}
+.completionActions.hasInstall{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:520px){.completionActions.hasInstall{grid-template-columns:1fr}}
+@media print{.installCard{display:none!important}}
+
 </style>
 </head>
 <body>
@@ -193,12 +213,24 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
         <a class="btn" id="waShare" href="#" target="_blank" rel="noopener">واتساب</a>
         <a class="btn" id="tgShare" href="#" target="_blank" rel="noopener">تيليجرام</a>
         <a class="btn" id="fbShare" href="#" target="_blank" rel="noopener">فيسبوك</a>
-        <button type="button" class="btn install-btn" id="installBtn" hidden>⬇️ تثبيت</button>
       </div>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
       <div class="progressWrap" aria-hidden="true"><div class="progress" id="progress"></div></div>
       <div class="meta"><span id="stepText"></span><span id="doneText"></span></div>
+    </section>
+
+    <section class="installCard" id="installCard" hidden aria-live="polite">
+      <button type="button" class="installClose" id="installClose" aria-label="إخفاء اقتراح التثبيت">×</button>
+      <div class="installIcon" aria-hidden="true">📲</div>
+      <div class="installCopy">
+        <strong>ثبّت أذكار طرفي النهار على هاتفك</strong>
+        <span>افتحها مباشرة من الشاشة الرئيسية، وتعمل بعد أول تحميل حتى بدون إنترنت.</span>
+        <div class="iosSteps" id="iosSteps" hidden>
+          على iPhone أو iPad: اضغط <strong>مشاركة ⬆️</strong> في المتصفح، ثم اختر <strong>إضافة إلى الشاشة الرئيسية</strong>.
+        </div>
+      </div>
+      <button type="button" class="btn installAction" id="installAction">📲 تثبيت أذكار طرفي النهار</button>
     </section>
 
     <section class="dhikr" id="singleView" aria-live="polite">
@@ -230,6 +262,7 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
       <p id="completionText">أتممت الأذكار.</p>
       <div class="completionActions">
         <button type="button" class="btn" id="shareDoneBtn">📤 مشاركة الأذكار</button>
+        <button type="button" class="btn" id="installDoneBtn" hidden>📲 تثبيت الأذكار</button>
         <button type="button" class="btn" id="restartDoneBtn">بدء من جديد</button>
       </div>
     </section>
@@ -450,6 +483,50 @@ function saveState(){
   }catch(e){}
 }
 
+const INSTALL_HIDE_KEY='azkaar-install-hide-until';
+let deferredPrompt=null;
+
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+}
+function isIOS(){
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+}
+function installHiddenForNow(){
+  try{return Number(localStorage.getItem(INSTALL_HIDE_KEY)||0)>Date.now()}catch(e){return false}
+}
+function hideInstallForDays(days=7){
+  try{localStorage.setItem(INSTALL_HIDE_KEY,String(Date.now()+days*86400000))}catch(e){}
+}
+function installEligible(){
+  return !isStandalone() && !installHiddenForNow() && completeCount()>=2;
+}
+function updateInstallUI(){
+  const eligible=installEligible();
+  const card=$('installCard');
+  const doneBtn=$('installDoneBtn');
+  if(card)card.hidden=!eligible;
+  if(doneBtn){
+    doneBtn.hidden=!eligible;
+    const actions=doneBtn.closest('.completionActions');
+    if(actions)actions.classList.toggle('hasInstall',eligible);
+  }
+  if(!eligible)return;
+  const action=$('installAction');
+  const steps=$('iosSteps');
+  if(isIOS()){
+    if(action)action.textContent='📲 طريقة الإضافة على iPhone';
+    if(steps)steps.hidden=true;
+  }else if(deferredPrompt){
+    if(action)action.textContent='📲 تثبيت أذكار طرفي النهار';
+    if(steps)steps.hidden=true;
+  }else{
+    if(action)action.textContent='📲 إضافة إلى الشاشة الرئيسية';
+    if(steps)steps.hidden=true;
+  }
+}
+
 function render(){
   const s=session();
   const index=s.index;
@@ -504,6 +581,7 @@ function render(){
     $('completionText').textContent='أتممت '+label+' بنسبة 100٪.';
   }
 
+  updateInstallUI();
   renderAll();
   saveState();
 }
@@ -675,32 +753,55 @@ $('shareBtn').addEventListener('click',sharePage);
 $('shareDoneBtn').addEventListener('click',sharePage);
 $('restartDoneBtn').addEventListener('click',restartCurrent);
 
-let deferredPrompt=null;
-const installBtn=$('installBtn');
+async function handleInstallRequest(){
+  if(isStandalone()){
+    updateInstallUI();
+    return;
+  }
+  if(isIOS()){
+    const steps=$('iosSteps');
+    if(steps)steps.hidden=false;
+    return;
+  }
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    try{
+      const choice=await deferredPrompt.userChoice;
+      if(choice && choice.outcome==='dismissed'){
+        hideInstallForDays(7);
+        notify('يمكنك تثبيتها لاحقًا من قائمة المتصفح');
+      }
+    }catch(e){}
+    deferredPrompt=null;
+    updateInstallUI();
+    return;
+  }
+  notify('من قائمة المتصفح اختر «إضافة إلى الشاشة الرئيسية»');
+}
+
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();
   deferredPrompt=e;
-  installBtn.hidden=false;
+  updateInstallUI();
 });
-installBtn.addEventListener('click',async()=>{
-  if(!deferredPrompt){
-    notify('استخدم «إضافة إلى الشاشة الرئيسية» من قائمة المتصفح');
-    return;
-  }
-  deferredPrompt.prompt();
-  try{await deferredPrompt.userChoice}catch(e){}
-  deferredPrompt=null;
-  installBtn.hidden=true;
+$('installAction').addEventListener('click',handleInstallRequest);
+$('installDoneBtn').addEventListener('click',handleInstallRequest);
+$('installClose').addEventListener('click',()=>{
+  hideInstallForDays(7);
+  updateInstallUI();
 });
 window.addEventListener('appinstalled',()=>{
-  installBtn.hidden=true;
-  notify('تم تثبيت الصفحة كتطبيق');
+  deferredPrompt=null;
+  try{localStorage.removeItem(INSTALL_HIDE_KEY)}catch(e){}
+  updateInstallUI();
+  notify('تم تثبيت أذكار طرفي النهار على هاتفك');
 });
+window.addEventListener('pageshow',updateInstallUI);
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      await navigator.serviceWorker.register('./sw.js?v=10');
+      await navigator.serviceWorker.register('./sw.js?v=11');
       await navigator.serviceWorker.ready;
       const st=$('offlineStatus');
       if(st){st.textContent='متاح دون إنترنت ✓';st.classList.add('ready')}
