@@ -1,5 +1,5 @@
-const CACHE='azkaar-v9';
-const CORE=['./','./index.html','./manifest.webmanifest','./icon.svg'];
+const CACHE='azkaar-v10';
+const CORE=['./','./index.html','./manifest.webmanifest','./icon.svg','./qr.png'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)));
