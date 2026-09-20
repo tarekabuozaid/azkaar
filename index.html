@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<!-- azkaar-version:11 -->
+<!-- azkaar-version:12 -->
 <!-- azkaar-version:6 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -11,6 +11,7 @@
 <link rel="canonical" href="https://tarekabuozaid.github.io/azkaar/">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <meta property="og:locale" content="ar_AR">
 <meta property="og:type" content="website">
 <meta property="og:title" content="أذكار طرفي النهار">
@@ -493,6 +494,13 @@ function isIOS(){
   return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
     (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
 }
+function isInAppBrowser(){
+  const ua=navigator.userAgent||'';
+  return /; wv\)|\bwv\b|FBAN|FBAV|Instagram|Line\/|ChatGPT/i.test(ua);
+}
+function isAndroid(){
+  return /android/i.test(navigator.userAgent||'');
+}
 function installHiddenForNow(){
   try{return Number(localStorage.getItem(INSTALL_HIDE_KEY)||0)>Date.now()}catch(e){return false}
 }
@@ -515,7 +523,10 @@ function updateInstallUI(){
   if(!eligible)return;
   const action=$('installAction');
   const steps=$('iosSteps');
-  if(isIOS()){
+  if(isInAppBrowser()){
+    if(action)action.textContent=isAndroid()?'🌐 افتح في Chrome للتثبيت':'🌐 افتح في المتصفح للتثبيت';
+    if(steps)steps.hidden=true;
+  }else if(isIOS()){
     if(action)action.textContent='📲 طريقة الإضافة على iPhone';
     if(steps)steps.hidden=true;
   }else if(deferredPrompt){
@@ -758,6 +769,15 @@ async function handleInstallRequest(){
     updateInstallUI();
     return;
   }
+  if(isInAppBrowser()){
+    if(isAndroid()){
+      const fallback=encodeURIComponent(SITE_URL);
+      window.location.href='intent://tarekabuozaid.github.io/azkaar/#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url='+fallback+';end';
+    }else{
+      notify('افتح الرابط في Safari أو Chrome ثم اختر الإضافة إلى الشاشة الرئيسية');
+    }
+    return;
+  }
   if(isIOS()){
     const steps=$('iosSteps');
     if(steps)steps.hidden=false;
@@ -801,7 +821,7 @@ window.addEventListener('pageshow',updateInstallUI);
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      await navigator.serviceWorker.register('./sw.js?v=11');
+      await navigator.serviceWorker.register('./sw.js?v=12');
       await navigator.serviceWorker.ready;
       const st=$('offlineStatus');
       if(st){st.textContent='متاح دون إنترنت ✓';st.classList.add('ready')}
