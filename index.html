@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<!-- azkaar-version:13 -->
+<!-- azkaar-version:14 -->
 <!-- azkaar-version:6 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -508,7 +508,7 @@ function hideInstallForDays(days=7){
   try{localStorage.setItem(INSTALL_HIDE_KEY,String(Date.now()+days*86400000))}catch(e){}
 }
 function installEligible(){
-  return !isStandalone() && !installHiddenForNow() && completeCount()>=2;
+  return !isStandalone() && !installHiddenForNow();
 }
 function updateInstallUI(){
   const eligible=installEligible();
@@ -770,12 +770,10 @@ async function handleInstallRequest(){
     return;
   }
   if(isInAppBrowser()){
-    if(isAndroid()){
-      const fallback=encodeURIComponent(SITE_URL);
-      window.location.href='intent://tarekabuozaid.github.io/azkaar/#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url='+fallback+';end';
-    }else{
-      notify('افتح الرابط في Safari أو Chrome ثم اختر الإضافة إلى الشاشة الرئيسية');
-    }
+    const msg=isAndroid()
+      ? 'للتثبيت: افتح هذه الصفحة في Chrome من قائمة ⋮ ثم اضغط «إضافة إلى الشاشة الرئيسية» أو «تثبيت التطبيق».'
+      : 'للتثبيت: افتح هذه الصفحة في Safari أو Chrome ثم اختر «إضافة إلى الشاشة الرئيسية».';
+    alert(msg);
     return;
   }
   if(isIOS()){
@@ -796,7 +794,7 @@ async function handleInstallRequest(){
     updateInstallUI();
     return;
   }
-  notify('من قائمة المتصفح اختر «إضافة إلى الشاشة الرئيسية»');
+  alert('المتصفح لم يرسل نافذة التثبيت تلقائيًا. افتح قائمة ⋮ في Chrome ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».');
 }
 
 window.addEventListener('beforeinstallprompt',e=>{
@@ -821,7 +819,7 @@ window.addEventListener('pageshow',updateInstallUI);
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      await navigator.serviceWorker.register('./sw.js?v=13');
+      await navigator.serviceWorker.register('./sw.js?v=14');
       await navigator.serviceWorker.ready;
       const st=$('offlineStatus');
       if(st){st.textContent='متاح دون إنترنت ✓';st.classList.add('ready')}
