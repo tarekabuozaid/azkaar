@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<!-- azkaar-version:8 -->
+<!-- azkaar-version:9 -->
 <!-- azkaar-version:6 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -129,6 +129,15 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
 .completion p{margin:0;color:var(--muted);line-height:1.8}
 .completionActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
 
+
+.itemTitle{
+  margin-top:10px;text-align:center;color:var(--accent);font-size:1.18rem;font-weight:900
+}
+.text.quranText{
+  font-family:"Noto Naskh Arabic","Traditional Arabic","Amiri",serif;
+  font-size:1.48rem!important;line-height:2.25;text-align:center;font-weight:600
+}
+
 </style>
 </head>
 <body>
@@ -167,6 +176,7 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
 
     <section class="dhikr" id="singleView" aria-live="polite">
       <div class="badge" id="numBadge">1</div>
+      <div class="itemTitle" id="itemTitle" hidden></div>
       <div class="text" id="dhikrText"></div>
       <div class="rep" id="repText"></div>
       <div class="tapHint" id="tapHint">يمكنك الضغط على بطاقة الذكر لاحتساب مرة</div>
@@ -244,7 +254,9 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
 (()=>{
 const root=document.getElementById('adhkar-app');
 const data=[
-{m:'قل هو الله أحد، الله الصمد، لم يلد ولم يولد، ولم يكن له كفوا أحد.\n\nقل أعوذ برب الفلق، من شر ما خلق، ومن شر غاسق إذا وقب، ومن شر النفاثات في العقد، ومن شر حاسد إذا حسد.\n\nقل أعوذ برب الناس، ملك الناس، إله الناس، من شر الوسواس الخناس، الذي يوسوس في صدور الناس، من الجنة والناس.',e:'قل هو الله أحد، الله الصمد، لم يلد ولم يولد، ولم يكن له كفوا أحد.\n\nقل أعوذ برب الفلق، من شر ما خلق، ومن شر غاسق إذا وقب، ومن شر النفاثات في العقد، ومن شر حاسد إذا حسد.\n\nقل أعوذ برب الناس، ملك الناس، إله الناس، من شر الوسواس الخناس، الذي يوسوس في صدور الناس، من الجنة والناس.',targets:[3],label:'ثلاث مرات'},
+{title:'سورة الإخلاص',quran:true,m:'قُلْ هُوَ ٱللَّهُ أَحَدٌ ١\nٱللَّهُ ٱلصَّمَدُ ٢\nلَمْ يَلِدْ وَلَمْ يُولَدْ ٣\nوَلَمْ يَكُن لَّهُۥ كُفُوًا أَحَدٌۢ ٤',e:'قُلْ هُوَ ٱللَّهُ أَحَدٌ ١\nٱللَّهُ ٱلصَّمَدُ ٢\nلَمْ يَلِدْ وَلَمْ يُولَدْ ٣\nوَلَمْ يَكُن لَّهُۥ كُفُوًا أَحَدٌۢ ٤',targets:[3],label:'ثلاث مرات'},
+{title:'سورة الفلق',quran:true,m:'قُلْ أَعُوذُ بِرَبِّ ٱلْفَلَقِ ١\nمِن شَرِّ مَا خَلَقَ ٢\nوَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ ٣\nوَمِن شَرِّ ٱلنَّفَّـٰثَـٰتِ فِى ٱلْعُقَدِ ٤\nوَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ ٥',e:'قُلْ أَعُوذُ بِرَبِّ ٱلْفَلَقِ ١\nمِن شَرِّ مَا خَلَقَ ٢\nوَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ ٣\nوَمِن شَرِّ ٱلنَّفَّـٰثَـٰتِ فِى ٱلْعُقَدِ ٤\nوَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ ٥',targets:[3],label:'ثلاث مرات'},
+{title:'سورة الناس',quran:true,m:'قُلْ أَعُوذُ بِرَبِّ ٱلنَّاسِ ١\nمَلِكِ ٱلنَّاسِ ٢\nإِلَـٰهِ ٱلنَّاسِ ٣\nمِن شَرِّ ٱلْوَسْوَاسِ ٱلْخَنَّاسِ ٤\nٱلَّذِى يُوَسْوِسُ فِى صُدُورِ ٱلنَّاسِ ٥\nمِنَ ٱلْجِنَّةِ وَٱلنَّاسِ ٦',e:'قُلْ أَعُوذُ بِرَبِّ ٱلنَّاسِ ١\nمَلِكِ ٱلنَّاسِ ٢\nإِلَـٰهِ ٱلنَّاسِ ٣\nمِن شَرِّ ٱلْوَسْوَاسِ ٱلْخَنَّاسِ ٤\nٱلَّذِى يُوَسْوِسُ فِى صُدُورِ ٱلنَّاسِ ٥\nمِنَ ٱلْجِنَّةِ وَٱلنَّاسِ ٦',targets:[3],label:'ثلاث مرات'},
 {m:'لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، وهو على كل شيء قدير.',e:'لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، وهو على كل شيء قدير.',targets:[1,10,100],label:'مرة واحدة، أو عشر مرات، أو مائة مرة'},
 {m:'سبحان الله وبحمده.',e:'سبحان الله وبحمده.',targets:[100],label:'مائة مرة'},
 {m:'بسم الله الذي لا يضر مع اسمه شيء في الأرض ولا في السماء، وهو السميع العليم.',e:'بسم الله الذي لا يضر مع اسمه شيء في الأرض ولا في السماء، وهو السميع العليم.',targets:[3],label:'ثلاث مرات'},
@@ -266,7 +278,7 @@ const data=[
 {m:'اللهم صل على محمد وعلى آل محمد كما صليت على إبراهيم وعلى آل إبراهيم، إنك حميد مجيد.',e:'اللهم صل على محمد وعلى آل محمد كما صليت على إبراهيم وعلى آل إبراهيم، إنك حميد مجيد.',targets:[10],label:'عشر مرات'}
 ];
 
-const STORAGE_KEY='azkaar-progress-v3';
+const STORAGE_KEY='azkaar-progress-v4';
 const OLD_STORAGE_KEY='azkaar-progress-v2';
 const SITE_URL='https://tarekabuozaid.github.io/azkaar/';
 const SHARE_TEXT='أذكار طرفي النهار — صدقة جارية';
@@ -356,7 +368,7 @@ function loadState(){
         state.sessions={morning:newSession(),evening:newSession()};
       }
     }else{
-      migrateOldState();
+      // Layout changed: start fresh once so old item positions do not shift.
     }
   }catch(e){}
   if(state.dark)document.body.classList.add('dark');
@@ -410,8 +422,11 @@ function render(){
   const target=s.targets[index];
 
   $('numBadge').textContent=index+1;
+  const itemTitle=$('itemTitle');
+  if(item.title){itemTitle.textContent=item.title;itemTitle.hidden=false}else{itemTitle.textContent='';itemTitle.hidden=true}
   $('dhikrText').textContent=state.mode==='morning'?item.m:item.e;
-  $('dhikrText').style.fontSize=state.font+'rem';
+  $('dhikrText').classList.toggle('quranText',!!item.quran);
+  $('dhikrText').style.fontSize=item.quran?'':state.font+'rem';
   $('repText').textContent='التكرار: '+item.label;
   $('countText').textContent=s.counts[index]+' / '+target;
   $('stepText').textContent='الذكر '+(index+1)+' من '+data.length;
@@ -468,10 +483,11 @@ function renderAll(){
     el.className='allItem';
     const top=document.createElement('div');
     top.className='small';
-    top.textContent='الذكر '+(i+1)+' • '+item.label+(s.counts[i]>=s.targets[i]?' • تم':'');
+    top.textContent=(item.title?item.title+' • ':'الذكر '+(i+1)+' • ')+item.label+(s.counts[i]>=s.targets[i]?' • تم':'');
     const txt=document.createElement('div');
-    txt.style.lineHeight='1.9';
-    txt.style.fontWeight='700';
+    txt.style.lineHeight=item.quran?'2.2':'1.9';
+    txt.style.fontWeight=item.quran?'600':'700';
+    if(item.quran){txt.classList.add('quranText')}
     txt.textContent=state.mode==='morning'?item.m:item.e;
     el.append(top,txt);
     box.appendChild(el);
@@ -614,7 +630,7 @@ window.addEventListener('appinstalled',()=>{
 });
 
 if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=8').catch(()=>{}));
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=9').catch(()=>{}));
 }
 
 setInterval(checkClock,60000);
