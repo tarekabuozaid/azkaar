@@ -217,7 +217,9 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
         <a class="btn" id="waShare" href="#" target="_blank" rel="noopener">واتساب</a>
         <a class="btn" id="tgShare" href="#" target="_blank" rel="noopener">تيليجرام</a>
         <a class="btn" id="fbShare" href="#" target="_blank" rel="noopener">فيسبوك</a>
+        <button type="button" class="btn install-btn" id="installBtn" hidden>📲 تثبيت</button>
       </div>
+      <div class="offline-status" id="offlineStatus" role="status" aria-live="polite"></div>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
       <div class="progressWrap" aria-hidden="true"><div class="progress" id="progress"></div></div>
@@ -507,17 +509,28 @@ function isAndroid(){
 function installHiddenForNow(){
   try{return Number(localStorage.getItem(INSTALL_HIDE_KEY)||0)>Date.now()}catch(e){return false}
 }
-function hideInstallForDays(days=7){
+function hideInstallForDays(days=3){
   try{localStorage.setItem(INSTALL_HIDE_KEY,String(Date.now()+days*86400000))}catch(e){}
 }
 function installEligible(){
   return !isStandalone() && !installHiddenForNow();
 }
+function installActionLabel(){
+  if(isInAppBrowser())return isAndroid()?'🌐 افتح في Chrome للتثبيت':'🌐 افتح في المتصفح للتثبيت';
+  if(isIOS())return '📲 طريقة الإضافة على iPhone';
+  if(deferredPrompt)return '📲 تثبيت أذكار طرفي النهار';
+  return '📲 إضافة إلى الشاشة الرئيسية';
+}
 function updateInstallUI(){
+  const standalone=isStandalone();
   const eligible=installEligible();
+  const label=installActionLabel();
   const card=$('installCard');
   const doneBtn=$('installDoneBtn');
+  const bar=$('installBtn');
   if(card)card.hidden=!eligible;
+  // The toolbar button ignores the dismissal window: closing the card hides the suggestion, not installing itself.
+  if(bar){bar.hidden=standalone;bar.title=label}
   if(doneBtn){
     doneBtn.hidden=!eligible;
     const actions=doneBtn.closest('.completionActions');
@@ -526,19 +539,8 @@ function updateInstallUI(){
   if(!eligible)return;
   const action=$('installAction');
   const steps=$('iosSteps');
-  if(isInAppBrowser()){
-    if(action)action.textContent=isAndroid()?'🌐 افتح في Chrome للتثبيت':'🌐 افتح في المتصفح للتثبيت';
-    if(steps)steps.hidden=true;
-  }else if(isIOS()){
-    if(action)action.textContent='📲 طريقة الإضافة على iPhone';
-    if(steps)steps.hidden=true;
-  }else if(deferredPrompt){
-    if(action)action.textContent='📲 تثبيت أذكار طرفي النهار';
-    if(steps)steps.hidden=true;
-  }else{
-    if(action)action.textContent='📲 إضافة إلى الشاشة الرئيسية';
-    if(steps)steps.hidden=true;
-  }
+  if(action)action.textContent=label;
+  if(steps)steps.hidden=true;
 }
 
 function render(){
@@ -789,7 +791,7 @@ async function handleInstallRequest(){
     try{
       const choice=await deferredPrompt.userChoice;
       if(choice && choice.outcome==='dismissed'){
-        hideInstallForDays(7);
+        hideInstallForDays();
         notify('يمكنك تثبيتها لاحقًا من قائمة المتصفح');
       }
     }catch(e){}
@@ -807,8 +809,9 @@ window.addEventListener('beforeinstallprompt',e=>{
 });
 $('installAction').addEventListener('click',handleInstallRequest);
 $('installDoneBtn').addEventListener('click',handleInstallRequest);
+$('installBtn').addEventListener('click',handleInstallRequest);
 $('installClose').addEventListener('click',()=>{
-  hideInstallForDays(7);
+  hideInstallForDays();
   updateInstallUI();
 });
 window.addEventListener('appinstalled',()=>{
@@ -822,7 +825,7 @@ window.addEventListener('pageshow',updateInstallUI);
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      await navigator.serviceWorker.register('./sw.js?v=14');
+      await navigator.serviceWorker.register('./sw.js?v=15');
       await navigator.serviceWorker.ready;
       const st=$('offlineStatus');
       if(st){st.textContent='متاح دون إنترنت ✓';st.classList.add('ready')}
