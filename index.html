@@ -782,8 +782,13 @@ async function handleInstallRequest(){
     return;
   }
   if(isIOS()){
-    const steps=$('iosSteps');
-    if(steps)steps.hidden=false;
+    const card=$('installCard');
+    if(card && !card.hidden){
+      const steps=$('iosSteps');
+      if(steps)steps.hidden=false;
+    }else{
+      alert('على iPhone أو iPad: اضغط زر المشاركة ⬆️ في المتصفح، ثم اختر «إضافة إلى الشاشة الرئيسية».');
+    }
     return;
   }
   if(deferredPrompt){
