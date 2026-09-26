@@ -189,11 +189,25 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
 @media(max-width:520px){.completionActions.hasInstall{grid-template-columns:1fr}}
 @media print{.installCard{display:none!important}}
 
+
+.focus-exit{display:none}.focus-mode .hero,.focus-mode .reading-extras,.focus-mode .footer,.focus-mode .sources-section,.focus-mode .siteVersion{display:none!important}
+.focus-mode .focus-exit{display:block;margin:0 0 12px auto}.focus-mode .dhikr{margin-top:0}
+.sharebar{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.share-options:not([hidden]){display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.share-options a{text-decoration:none}
+.update-notice:not([hidden]){display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:12px;margin-bottom:12px;background:var(--card);border:1px solid var(--border);border-radius:14px}
+.toast.show{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:20;max-width:90vw;box-shadow:0 3px 18px #0004}
+@media(max-width:480px){.hero{padding:14px}.reading-controls>.btn,.reading-settings>summary{min-height:48px}.counterBox{grid-template-columns:minmax(48px,1fr) auto minmax(48px,1fr);gap:8px}.tap,.nav .btn{min-height:48px}.reading-extras{margin-top:20px}.sharebar .btn{padding:10px 6px}.text{overflow-wrap:anywhere}}
+@media print{.focus-exit,.update-notice,.share-options{display:none!important}}
 </style>
 </head>
 <body>
 <div id="adhkar-app">
   <div class="wrap">
+    <div class="update-notice" id="updateNotice" role="status" hidden>
+      <span>نسخة جديدة جاهزة. تقدّمك محفوظ.</span>
+      <button type="button" class="btn" id="applyUpdate">تحديث الآن</button>
+      <button type="button" class="btn" id="dismissUpdate">لاحقًا</button>
+    </div>
     <div class="printHeader"><h1>أذكار طرفي النهار</h1><div id="printModeLabel"></div></div>
     <section class="hero">
       <div class="basmala">بسم الله الرحمن الرحيم</div>
@@ -206,6 +220,7 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
       </div>
 
       <div class="reading-controls">
+        <button type="button" class="btn" id="focusBtn">وضع التركيز</button>
       <details class="reading-settings">
         <summary class="btn">⚙️ إعدادات القراءة</summary>
       <div class="toolbar">
@@ -228,6 +243,7 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
 
 
 
+    <button type="button" class="btn focus-exit" id="focusExit">العودة للواجهة الكاملة</button>
     <section class="dhikr" id="singleView" aria-live="polite">
       <div class="badge" id="numBadge">1</div>
       <div class="itemTitle" id="itemTitle" hidden></div>
@@ -277,13 +293,17 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
         <button type="button" class="btn" id="printBtn">🖨️ طباعة</button>
       </div>
       <div class="sharebar" aria-label="المشاركة والتثبيت">
-        <button type="button" class="btn" id="shareBtn">📤 مشاركة</button>
-        <a class="btn" id="waShare" href="#" target="_blank" rel="noopener">واتساب</a>
-        <a class="btn" id="tgShare" href="#" target="_blank" rel="noopener">تيليجرام</a>
-        <a class="btn" id="fbShare" href="#" target="_blank" rel="noopener">فيسبوك</a>
+        <button type="button" class="btn" id="shareBtn" aria-expanded="false" aria-controls="shareOptions">📤 مشاركة</button>
         <button type="button" class="btn" id="qrBtn" aria-expanded="false" aria-controls="qrPanel">عرض QR</button>
         <button type="button" class="btn install-btn" id="installBtn" hidden>📲 تثبيت</button>
       </div>
+    <div class="share-options" id="shareOptions" aria-label="خيارات المشاركة" hidden>
+        <a class="btn" id="waShare" href="#" target="_blank" rel="noopener">واتساب</a>
+        <a class="btn" id="tgShare" href="#" target="_blank" rel="noopener">تيليجرام</a>
+        <a class="btn" id="fbShare" href="#" target="_blank" rel="noopener">فيسبوك</a>
+      <button type="button" class="btn" id="copyLinkBtn">نسخ الرابط</button>
+      <button type="button" class="btn" id="systemShareBtn">مشاركة عبر الجهاز</button>
+    </div>
     <section class="qr-card" id="qrPanel" aria-label="رمز QR للمشاركة" hidden>
       <strong>شارك الصفحة بسهولة</strong>
       <svg class="qr-svg" viewBox="0 0 37 37" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="QR code: https://azkaar-d8u.pages.dev/"><rect width="37" height="37" fill="white"/><path d="M4,4h1v1h-1zM5,4h1v1h-1zM6,4h1v1h-1zM7,4h1v1h-1zM8,4h1v1h-1zM9,4h1v1h-1zM10,4h1v1h-1zM13,4h1v1h-1zM15,4h1v1h-1zM18,4h1v1h-1zM22,4h1v1h-1zM23,4h1v1h-1zM26,4h1v1h-1zM27,4h1v1h-1zM28,4h1v1h-1zM29,4h1v1h-1zM30,4h1v1h-1zM31,4h1v1h-1zM32,4h1v1h-1zM4,5h1v1h-1zM10,5h1v1h-1zM12,5h1v1h-1zM17,5h1v1h-1zM21,5h1v1h-1zM22,5h1v1h-1zM23,5h1v1h-1zM24,5h1v1h-1zM26,5h1v1h-1zM32,5h1v1h-1zM4,6h1v1h-1zM6,6h1v1h-1zM7,6h1v1h-1zM8,6h1v1h-1zM10,6h1v1h-1zM14,6h1v1h-1zM16,6h1v1h-1zM19,6h1v1h-1zM23,6h1v1h-1zM26,6h1v1h-1zM28,6h1v1h-1zM29,6h1v1h-1zM30,6h1v1h-1zM32,6h1v1h-1zM4,7h1v1h-1zM6,7h1v1h-1zM7,7h1v1h-1zM8,7h1v1h-1zM10,7h1v1h-1zM13,7h1v1h-1zM14,7h1v1h-1zM15,7h1v1h-1zM17,7h1v1h-1zM20,7h1v1h-1zM22,7h1v1h-1zM23,7h1v1h-1zM26,7h1v1h-1zM28,7h1v1h-1zM29,7h1v1h-1zM30,7h1v1h-1zM32,7h1v1h-1zM4,8h1v1h-1zM6,8h1v1h-1zM7,8h1v1h-1zM8,8h1v1h-1zM10,8h1v1h-1zM12,8h1v1h-1zM13,8h1v1h-1zM14,8h1v1h-1zM17,8h1v1h-1zM20,8h1v1h-1zM23,8h1v1h-1zM26,8h1v1h-1zM28,8h1v1h-1zM29,8h1v1h-1zM30,8h1v1h-1zM32,8h1v1h-1zM4,9h1v1h-1zM10,9h1v1h-1zM14,9h1v1h-1zM15,9h1v1h-1zM18,9h1v1h-1zM19,9h1v1h-1zM20,9h1v1h-1zM23,9h1v1h-1zM24,9h1v1h-1zM26,9h1v1h-1zM32,9h1v1h-1zM4,10h1v1h-1zM5,10h1v1h-1zM6,10h1v1h-1zM7,10h1v1h-1zM8,10h1v1h-1zM9,10h1v1h-1zM10,10h1v1h-1zM12,10h1v1h-1zM14,10h1v1h-1zM16,10h1v1h-1zM18,10h1v1h-1zM20,10h1v1h-1zM22,10h1v1h-1zM24,10h1v1h-1zM26,10h1v1h-1zM27,10h1v1h-1zM28,10h1v1h-1zM29,10h1v1h-1zM30,10h1v1h-1zM31,10h1v1h-1zM32,10h1v1h-1zM14,11h1v1h-1zM15,11h1v1h-1zM16,11h1v1h-1zM19,11h1v1h-1zM21,11h1v1h-1zM22,11h1v1h-1zM23,11h1v1h-1zM4,12h1v1h-1zM6,12h1v1h-1zM8,12h1v1h-1zM10,12h1v1h-1zM15,12h1v1h-1zM20,12h1v1h-1zM21,12h1v1h-1zM22,12h1v1h-1zM24,12h1v1h-1zM28,12h1v1h-1zM31,12h1v1h-1zM5,13h1v1h-1zM13,13h1v1h-1zM17,13h1v1h-1zM19,13h1v1h-1zM20,13h1v1h-1zM24,13h1v1h-1zM25,13h1v1h-1zM26,13h1v1h-1zM29,13h1v1h-1zM32,13h1v1h-1zM6,14h1v1h-1zM10,14h1v1h-1zM11,14h1v1h-1zM13,14h1v1h-1zM14,14h1v1h-1zM16,14h1v1h-1zM18,14h1v1h-1zM19,14h1v1h-1zM20,14h1v1h-1zM21,14h1v1h-1zM24,14h1v1h-1zM26,14h1v1h-1zM27,14h1v1h-1zM28,14h1v1h-1zM30,14h1v1h-1zM31,14h1v1h-1zM32,14h1v1h-1zM4,15h1v1h-1zM8,15h1v1h-1zM9,15h1v1h-1zM12,15h1v1h-1zM14,15h1v1h-1zM15,15h1v1h-1zM17,15h1v1h-1zM18,15h1v1h-1zM20,15h1v1h-1zM21,15h1v1h-1zM23,15h1v1h-1zM27,15h1v1h-1zM31,15h1v1h-1zM4,16h1v1h-1zM6,16h1v1h-1zM10,16h1v1h-1zM11,16h1v1h-1zM13,16h1v1h-1zM15,16h1v1h-1zM16,16h1v1h-1zM18,16h1v1h-1zM19,16h1v1h-1zM21,16h1v1h-1zM25,16h1v1h-1zM26,16h1v1h-1zM29,16h1v1h-1zM31,16h1v1h-1zM32,16h1v1h-1zM6,17h1v1h-1zM7,17h1v1h-1zM9,17h1v1h-1zM11,17h1v1h-1zM12,17h1v1h-1zM15,17h1v1h-1zM18,17h1v1h-1zM19,17h1v1h-1zM21,17h1v1h-1zM24,17h1v1h-1zM26,17h1v1h-1zM29,17h1v1h-1zM32,17h1v1h-1zM6,18h1v1h-1zM9,18h1v1h-1zM10,18h1v1h-1zM12,18h1v1h-1zM13,18h1v1h-1zM16,18h1v1h-1zM17,18h1v1h-1zM24,18h1v1h-1zM26,18h1v1h-1zM27,18h1v1h-1zM29,18h1v1h-1zM31,18h1v1h-1zM32,18h1v1h-1zM7,19h1v1h-1zM8,19h1v1h-1zM9,19h1v1h-1zM13,19h1v1h-1zM14,19h1v1h-1zM19,19h1v1h-1zM21,19h1v1h-1zM24,19h1v1h-1zM25,19h1v1h-1zM26,19h1v1h-1zM27,19h1v1h-1zM28,19h1v1h-1zM29,19h1v1h-1zM31,19h1v1h-1zM4,20h1v1h-1zM6,20h1v1h-1zM7,20h1v1h-1zM8,20h1v1h-1zM10,20h1v1h-1zM11,20h1v1h-1zM20,20h1v1h-1zM21,20h1v1h-1zM23,20h1v1h-1zM24,20h1v1h-1zM26,20h1v1h-1zM29,20h1v1h-1zM31,20h1v1h-1zM32,20h1v1h-1zM5,21h1v1h-1zM13,21h1v1h-1zM17,21h1v1h-1zM19,21h1v1h-1zM20,21h1v1h-1zM21,21h1v1h-1zM25,21h1v1h-1zM26,21h1v1h-1zM29,21h1v1h-1zM30,21h1v1h-1zM32,21h1v1h-1zM4,22h1v1h-1zM8,22h1v1h-1zM9,22h1v1h-1zM10,22h1v1h-1zM13,22h1v1h-1zM18,22h1v1h-1zM19,22h1v1h-1zM20,22h1v1h-1zM25,22h1v1h-1zM31,22h1v1h-1zM32,22h1v1h-1zM5,23h1v1h-1zM7,23h1v1h-1zM8,23h1v1h-1zM11,23h1v1h-1zM13,23h1v1h-1zM14,23h1v1h-1zM15,23h1v1h-1zM17,23h1v1h-1zM18,23h1v1h-1zM20,23h1v1h-1zM21,23h1v1h-1zM22,23h1v1h-1zM23,23h1v1h-1zM24,23h1v1h-1zM27,23h1v1h-1zM28,23h1v1h-1zM29,23h1v1h-1zM31,23h1v1h-1zM4,24h1v1h-1zM6,24h1v1h-1zM9,24h1v1h-1zM10,24h1v1h-1zM14,24h1v1h-1zM15,24h1v1h-1zM16,24h1v1h-1zM18,24h1v1h-1zM19,24h1v1h-1zM21,24h1v1h-1zM24,24h1v1h-1zM25,24h1v1h-1zM26,24h1v1h-1zM27,24h1v1h-1zM28,24h1v1h-1zM12,25h1v1h-1zM14,25h1v1h-1zM15,25h1v1h-1zM16,25h1v1h-1zM18,25h1v1h-1zM19,25h1v1h-1zM21,25h1v1h-1zM22,25h1v1h-1zM24,25h1v1h-1zM28,25h1v1h-1zM30,25h1v1h-1zM31,25h1v1h-1zM32,25h1v1h-1zM4,26h1v1h-1zM5,26h1v1h-1zM6,26h1v1h-1zM7,26h1v1h-1zM8,26h1v1h-1zM9,26h1v1h-1zM10,26h1v1h-1zM13,26h1v1h-1zM15,26h1v1h-1zM16,26h1v1h-1zM17,26h1v1h-1zM21,26h1v1h-1zM23,26h1v1h-1zM24,26h1v1h-1zM26,26h1v1h-1zM28,26h1v1h-1zM29,26h1v1h-1zM31,26h1v1h-1zM32,26h1v1h-1zM4,27h1v1h-1zM10,27h1v1h-1zM14,27h1v1h-1zM15,27h1v1h-1zM16,27h1v1h-1zM19,27h1v1h-1zM21,27h1v1h-1zM24,27h1v1h-1zM28,27h1v1h-1zM29,27h1v1h-1zM4,28h1v1h-1zM6,28h1v1h-1zM7,28h1v1h-1zM8,28h1v1h-1zM10,28h1v1h-1zM12,28h1v1h-1zM13,28h1v1h-1zM14,28h1v1h-1zM15,28h1v1h-1zM20,28h1v1h-1zM21,28h1v1h-1zM22,28h1v1h-1zM24,28h1v1h-1zM25,28h1v1h-1zM26,28h1v1h-1zM27,28h1v1h-1zM28,28h1v1h-1zM31,28h1v1h-1zM4,29h1v1h-1zM6,29h1v1h-1zM7,29h1v1h-1zM8,29h1v1h-1zM10,29h1v1h-1zM14,29h1v1h-1zM16,29h1v1h-1zM19,29h1v1h-1zM20,29h1v1h-1zM23,29h1v1h-1zM28,29h1v1h-1zM30,29h1v1h-1zM4,30h1v1h-1zM6,30h1v1h-1zM7,30h1v1h-1zM8,30h1v1h-1zM10,30h1v1h-1zM12,30h1v1h-1zM13,30h1v1h-1zM16,30h1v1h-1zM18,30h1v1h-1zM19,30h1v1h-1zM20,30h1v1h-1zM21,30h1v1h-1zM27,30h1v1h-1zM28,30h1v1h-1zM29,30h1v1h-1zM32,30h1v1h-1zM4,31h1v1h-1zM10,31h1v1h-1zM14,31h1v1h-1zM15,31h1v1h-1zM16,31h1v1h-1zM20,31h1v1h-1zM21,31h1v1h-1zM22,31h1v1h-1zM24,31h1v1h-1zM31,31h1v1h-1zM4,32h1v1h-1zM5,32h1v1h-1zM6,32h1v1h-1zM7,32h1v1h-1zM8,32h1v1h-1zM9,32h1v1h-1zM10,32h1v1h-1zM12,32h1v1h-1zM13,32h1v1h-1zM14,32h1v1h-1zM15,32h1v1h-1zM16,32h1v1h-1zM17,32h1v1h-1zM18,32h1v1h-1zM19,32h1v1h-1zM20,32h1v1h-1zM22,32h1v1h-1zM24,32h1v1h-1zM26,32h1v1h-1zM28,32h1v1h-1zM31,32h1v1h-1zM32,32h1v1h-1z" fill="black"/></svg>
@@ -667,6 +687,7 @@ function add(n){
 
 function restartCurrent(){
   const label=state.mode==='morning'?'الصباح':'المساء';
+  if(!confirm('إعادة أذكار '+label+' إلى البداية؟ سيُمسح تقدّم هذه الفترة فقط.'))return;
   state.sessions[state.mode]=newSession();
   state.showAll=false;
   render();
@@ -757,11 +778,7 @@ $('fontMinus').addEventListener('click',()=>{state.font=Math.max(1,state.font-.1
 $('themeBtn').addEventListener('click',()=>{document.body.classList.toggle('dark');state.dark=document.body.classList.contains('dark');render()});
 $('allBtn').addEventListener('click',()=>{state.showAll=!state.showAll;render()});
 $('printBtn').addEventListener('click',printCurrentMode);
-$('resetBtn').addEventListener('click',()=>{
-  const label=state.mode==='morning'?'الصباح':'المساء';
-  if(!confirm('إعادة أذكار '+label+' فقط إلى البداية؟'))return;
-  restartCurrent();
-});
+$('resetBtn').addEventListener('click',restartCurrent);
 
 let swipeStartX=null,swipeStartY=null;
 $('singleView').addEventListener('touchstart',e=>{
@@ -789,7 +806,25 @@ $('singleView').addEventListener('click',e=>{
 $('waShare').href='https://wa.me/?text='+encodeURIComponent(SHARE_TEXT+'\n'+SITE_URL);
 $('tgShare').href='https://t.me/share/url?url='+encodeURIComponent(SITE_URL)+'&text='+encodeURIComponent(SHARE_TEXT);
 $('fbShare').href='https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(SITE_URL);
-$('shareBtn').addEventListener('click',sharePage);
+$('shareBtn').addEventListener('click',()=>{
+  const panel=$('shareOptions');panel.hidden=!panel.hidden;
+  $('shareBtn').setAttribute('aria-expanded',String(!panel.hidden));
+});
+$('systemShareBtn').addEventListener('click',sharePage);
+$('copyLinkBtn').addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText(SITE_URL);notify('تم نسخ الرابط')}
+  catch(e){window.prompt('انسخ رابط الصفحة:',SITE_URL)}
+});
+let beforeFocusShowAll=false;
+$('focusBtn').addEventListener('click',()=>{
+  beforeFocusShowAll=state.showAll;state.showAll=false;render();
+  document.body.classList.add('focus-mode');$('focusExit').focus();window.scrollTo(0,0);
+});
+function exitFocus(){
+  document.body.classList.remove('focus-mode');state.showAll=beforeFocusShowAll;render();$('focusBtn').focus();
+}
+$('focusExit').addEventListener('click',exitFocus);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('focus-mode'))exitFocus()});
 $('qrBtn').addEventListener('click',()=>{
   const panel=$('qrPanel');
   panel.hidden=!panel.hidden;
@@ -860,7 +895,22 @@ window.addEventListener('pageshow',updateInstallUI);
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
-      await navigator.serviceWorker.register('./sw.js?v=15');
+      const registration=await navigator.serviceWorker.register('./sw.js');
+      let reloadRequested=false;
+      const showUpdate=()=>{if(registration.waiting&&navigator.serviceWorker.controller)$('updateNotice').hidden=false};
+      showUpdate();
+      registration.addEventListener('updatefound',()=>{
+        const worker=registration.installing;
+        if(worker)worker.addEventListener('statechange',()=>{if(worker.state==='installed')showUpdate()});
+      });
+      $('dismissUpdate').addEventListener('click',()=>{$('updateNotice').hidden=true});
+      $('applyUpdate').addEventListener('click',()=>{
+        saveState();
+        if(registration.waiting){reloadRequested=true;registration.waiting.postMessage({type:'SKIP_WAITING'})}
+        else window.location.reload();
+      });
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{if(reloadRequested)window.location.reload()});
+      document.addEventListener('visibilitychange',()=>{if(!document.hidden)registration.update().catch(()=>{})});
       await navigator.serviceWorker.ready;
       const st=$('offlineStatus');
       if(st){st.textContent='متاح دون إنترنت ✓';st.classList.add('ready')}
