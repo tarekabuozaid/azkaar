@@ -50,6 +50,7 @@ button,select{font:inherit;min-height:44px}
   background:#fff;color:var(--text);font-weight:700;cursor:pointer
 }
 .btn.active{background:var(--soft);border-color:var(--accent);color:var(--accent)}
+.reading-controls{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;margin:14px 0}.reading-settings>summary{cursor:pointer;min-height:44px}.reading-settings .toolbar{margin-bottom:0}.dark .tap:not(.secondary){background:#a71922;color:#fff}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
 .progressWrap{height:9px;background:#eadfd6;border-radius:999px;overflow:hidden}
 .progress{height:100%;background:var(--accent);width:0;transition:.25s}
@@ -62,7 +63,7 @@ button,select{font:inherit;min-height:44px}
 .text{font-size:1.32rem;line-height:2.05;font-weight:700;white-space:pre-line;margin-top:12px}
 .rep{margin-top:14px;color:var(--accent);font-weight:700}
 .counterBox{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-top:16px}
-.count{font-size:1.5rem;font-weight:900;text-align:center;min-width:86px}
+.count{font-size:clamp(.95rem,3.6vw,1.2rem);font-weight:900;text-align:center;min-width:86px}
 .tap{width:100%;border:0;border-radius:16px;padding:13px;background:var(--accent);color:#fff;font-weight:900;cursor:pointer}
 .tap.secondary{background:#fff;color:var(--text);border:1px solid var(--border)}
 .nav{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
@@ -77,8 +78,9 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
   margin-top:16px;padding:18px 10px;border-top:1px solid var(--border);
   text-align:center;line-height:1.9;color:var(--muted);font-size:.92rem
 }
-.dark{--bg:#151515;--card:#1f1f1f;--text:#f4f1eb;--muted:#c4bdb2;--border:#3d3935;--soft:#3a2022}
+.dark{--accent:#ff929b;--accent2:#ffb5bc;--bg:#151515;--card:#1f1f1f;--text:#f4f1eb;--muted:#c4bdb2;--border:#3d3935;--soft:#3a2022}
 .dark .btn,.dark select,.dark .tap.secondary{background:#242424;color:var(--text)}
+.dark .btn.active{background:var(--soft);color:var(--accent);border-color:var(--accent)}
 @media(max-width:420px){
   .wrap{padding:10px}.hero,.dhikr{border-radius:18px}
   h1{font-size:1.65rem}.text{font-size:1.18rem;line-height:1.95}
@@ -203,11 +205,16 @@ select{background:#fff;color:var(--text);border:1px solid var(--border);border-r
         <button type="button" class="btn" data-mode="evening">🌙 أذكار المساء</button>
       </div>
 
+      <div class="reading-controls">
+      <details class="reading-settings">
+        <summary class="btn">⚙️ إعدادات القراءة</summary>
       <div class="toolbar">
         <button type="button" class="btn" id="fontPlus">تكبير الخط +</button>
         <button type="button" class="btn" id="fontMinus">تصغير الخط −</button>
         <button type="button" class="btn" id="themeBtn">الوضع الليلي</button>
         <button type="button" class="btn" id="allBtn">عرض كل الأذكار</button>
+      </div>
+      </details>
         <button type="button" class="btn" id="resetBtn">إعادة البداية</button>
       </div>
 
@@ -573,7 +580,7 @@ function render(){
   $('dhikrText').classList.toggle('quranText',!!item.quran);
   $('dhikrText').style.fontSize=item.quran?'':state.font+'rem';
   $('repText').textContent='التكرار: '+item.label;
-  $('countText').textContent=s.counts[index]+' / '+target;
+  $('countText').textContent=s.counts[index]>=target?'تم ✓':'قرأت '+s.counts[index].toLocaleString('ar-EG')+' من '+target.toLocaleString('ar-EG');
   $('stepText').textContent='الذكر '+(index+1)+' من '+data.length;
 
   const done=completeCount(s);
